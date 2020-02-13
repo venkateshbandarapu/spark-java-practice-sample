@@ -1,7 +1,6 @@
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.*;
 import org.apache.spark.sql.types.*;
+
 
 public class TestSparkCon {
 
@@ -17,7 +16,9 @@ public class TestSparkCon {
                 .schema(getEmpSchema())
                 .csv("src/main/resources/emp.csv");
 
-        empData.show();
+        Dataset<Emp> empDataset=empData.as(Encoders.bean(Emp.class));
+
+        empDataset.map((Emp a)->a.emp_id,Encoders.INT()).show();
         empData.printSchema();
 
     }
