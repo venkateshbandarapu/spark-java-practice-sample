@@ -1,3 +1,10 @@
-emp_id,dept_id,sal
-1,10,90000
-2,11,10000
+emp_id,emp_name,dept_id,salary
+1,John,10,90000.00
+2,Arnald,11,10000.00
+3,kevin,12,60000.00
+4,Anderson,12,15000.00
+5,Robin,10,25000.00
+6,Benn,11,13000.00
+7,Steve,12,10000.00
+8,Stefen,10,15000.00
+9,Roshan,11,9000.00
