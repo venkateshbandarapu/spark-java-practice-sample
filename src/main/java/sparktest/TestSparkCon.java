@@ -1,19 +1,36 @@
 package sparktest;
 import org.apache.spark.sql.*;
+import org.apache.spark.sql.expressions.UserDefinedFunction;
 import org.apache.spark.sql.expressions.Window;
 import org.apache.spark.sql.types.*;
 import java.net.URISyntaxException;
 import org.apache.spark.sql.functions.*;
+import scala.Int;
 
 
 public class TestSparkCon {
 
-    public static void main(String h[]) throws URISyntaxException {
+ //UserDefinedFunction derivedEmpId=functions.udf()
+
+
+    public static String getDerivedEmpID(int empID){
+
+        return "EMP-TEST-"+Integer.toString(empID);
+
+    }
+
+    public static void main(String h[]) {
 
         SparkSession spark = SparkSession
                 .builder()
                 .enableHiveSupport()
                 .getOrCreate();
+
+
+        spark.udf().register("empIdUDF",
+                (Integer empID)-> "EMP-TEST-"+Integer.toString(empID)
+                ,DataTypes.StringType);
+
 
         spark.conf().set("spark.sql.legacy.allowCreatingManagedTableUsingNonemptyLocation",true);
 
@@ -27,6 +44,7 @@ public class TestSparkCon {
                 .write().mode(SaveMode.Overwrite).saveAsTable("test_odm_team.result_max_empsal_by_dept");
 
     }
+
     public static Dataset<Row> getMaxSalEmpByDept(Dataset<Emp> empData,Dataset<Dept> deptData){
 
         Dataset<Row> rankedEmpSalByDept=empData.withColumn("ranking",
@@ -38,9 +56,12 @@ public class TestSparkCon {
 
         Dataset<Row> maxSalEmpByDept=maxEmpSalByDept.join(deptData,
                 maxEmpSalByDept.col("dept_id").equalTo(deptData.col("dept_id")),"left_outer")
-                .select(maxEmpSalByDept.col("emp_id"),maxEmpSalByDept.col("emp_name"),deptData.col("dept_name"),maxEmpSalByDept.col("salary"));
+                .withColumn("derived_emp_id",functions.callUDF("empIdUDF",maxEmpSalByDept.col("emp_id")));
 
-       return maxSalEmpByDept;
+        Dataset<Row> maxSalEmpByDeptData=maxSalEmpByDept.select(maxSalEmpByDept.col("derived_emp_id"),maxEmpSalByDept.col("emp_id"),maxEmpSalByDept.col("emp_name")
+                ,deptData.col("dept_name"),maxEmpSalByDept.col("salary"));
+
+       return maxSalEmpByDeptData;
     }
 
     public static StructType getEmpSchema() {

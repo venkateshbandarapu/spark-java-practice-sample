@@ -2,6 +2,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.types.DataTypes;
 import sparktest.Dept;
 import sparktest.Emp;
 import sparktest.TestSparkCon;
@@ -14,6 +15,10 @@ public class empTest {
                 .master("local[*]")
                 .enableHiveSupport()
                 .getOrCreate();
+
+        spark.udf().register("empIdUDF",
+                (Integer empID)-> "EMP-TEST-"+Integer.toString(empID)
+                , DataTypes.StringType);
 
 
         Dataset<Row> empData = spark.read()
