@@ -10,15 +10,6 @@ import scala.Int;
 
 public class TestSparkCon {
 
- //UserDefinedFunction derivedEmpId=functions.udf()
-
-
-    public static String getDerivedEmpID(int empID){
-
-        return "EMP-TEST-"+Integer.toString(empID);
-
-    }
-
     public static void main(String h[]) {
 
         SparkSession spark = SparkSession
