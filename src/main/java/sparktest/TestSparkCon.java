@@ -1,7 +1,9 @@
 package sparktest;
 import org.apache.spark.sql.*;
+import org.apache.spark.sql.expressions.Window;
 import org.apache.spark.sql.types.*;
 import java.net.URISyntaxException;
+import org.apache.spark.sql.functions.*;
 
 
 public class TestSparkCon {
@@ -14,32 +16,35 @@ public class TestSparkCon {
 
         SparkSession spark = SparkSession
                 .builder()
-                //.master("local[*]")
                 .enableHiveSupport()
                 .getOrCreate();
 
         spark.conf().set("spark.sql.legacy.allowCreatingManagedTableUsingNonemptyLocation",true);
 
-        ClassLoader loader = TestSparkCon.class.getClassLoader();
-        String empCsv = loader.getResource("emp.csv").getPath().replace("testngSpark-1.0-SNAPSHOT.jar!", "");
-        String deptCsv = loader.getResource("dept.csv").getPath().replace("testngSpark-1.0-SNAPSHOT.jar!", "");
-
-        Dataset<Row> empData = spark.read()
-                .option("header", "true")
-                .schema(getEmpSchema())
-                .csv(empCsv);
-
-        Dataset<Row> deptData = spark.read()
-                .option("header", "true")
-                .schema(getDeptSchema())
-                .csv(deptCsv);
+        Dataset<Row> empData=spark.table("test_odm_team.empData");
+        Dataset<Row> deptData=spark.table("test_odm_team.deptData");
 
         Dataset<Emp> empDataset = empData.as(Encoders.bean(Emp.class));
         Dataset<Dept> deptDataset = deptData.as(Encoders.bean(Dept.class));
-        empDataset.write().mode(SaveMode.Overwrite).saveAsTable("test_odm_team.empData");
-        deptDataset.write().mode(SaveMode.Overwrite).saveAsTable("test_odm_team.deptData");
-        // empData.printSchema();
 
+        getMaxSalEmpByDept(empDataset,deptDataset)
+                .write().mode(SaveMode.Overwrite).saveAsTable("test_odm_team.result_max_empsal_by_dept");
+
+    }
+    public static Dataset<Row> getMaxSalEmpByDept(Dataset<Emp> empData,Dataset<Dept> deptData){
+
+        Dataset<Row> rankedEmpByDept=empData.withColumn("ranking",
+                functions.row_number().over(Window.partitionBy(empData.col("dept_id")).orderBy(functions.desc("salary"))));
+
+        Dataset<Row> groupEmpSalByDept=rankedEmpByDept
+                .filter(rankedEmpByDept.col("ranking").equalTo("1"))
+                .drop("ranking");
+
+        Dataset<Row> maxSalEmpByDept=groupEmpSalByDept.join(deptData,
+                groupEmpSalByDept.col("dept_id").equalTo(deptData.col("dept_id")),"left_outer")
+                .select(groupEmpSalByDept.col("emp_id"),groupEmpSalByDept.col("emp_name"),deptData.col("dept_name"),groupEmpSalByDept.col("salary"));
+
+       return maxSalEmpByDept;
     }
 
     public static StructType getEmpSchema() {

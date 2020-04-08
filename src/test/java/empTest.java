@@ -28,7 +28,8 @@ public class empTest {
 
         Dataset<Emp> empDataset = empData.as(Encoders.bean(Emp.class));
         Dataset<Dept> deptDataset = deptData.as(Encoders.bean(Dept.class));
-        empDataset.show();
-        deptDataset.show();
+        TestSparkCon.getMaxSalEmpByDept(empDataset,deptDataset).show();
+       // empDataset.show();
+        //deptDataset.show();
     }
 }
