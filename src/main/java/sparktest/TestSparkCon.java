@@ -8,11 +8,7 @@ import org.apache.spark.sql.functions.*;
 
 public class TestSparkCon {
 
-    public String resourcefile = this.getClass().getClassLoader().getResource("emp.csv").getPath();
-
     public static void main(String h[]) throws URISyntaxException {
-
-        //TestSparkCon conf = new TestSparkCon();
 
         SparkSession spark = SparkSession
                 .builder()
@@ -33,16 +29,16 @@ public class TestSparkCon {
     }
     public static Dataset<Row> getMaxSalEmpByDept(Dataset<Emp> empData,Dataset<Dept> deptData){
 
-        Dataset<Row> rankedEmpByDept=empData.withColumn("ranking",
+        Dataset<Row> rankedEmpSalByDept=empData.withColumn("ranking",
                 functions.row_number().over(Window.partitionBy(empData.col("dept_id")).orderBy(functions.desc("salary"))));
 
-        Dataset<Row> groupEmpSalByDept=rankedEmpByDept
-                .filter(rankedEmpByDept.col("ranking").equalTo("1"))
+        Dataset<Row> maxEmpSalByDept=rankedEmpSalByDept
+                .filter(rankedEmpSalByDept.col("ranking").equalTo("1"))
                 .drop("ranking");
 
-        Dataset<Row> maxSalEmpByDept=groupEmpSalByDept.join(deptData,
-                groupEmpSalByDept.col("dept_id").equalTo(deptData.col("dept_id")),"left_outer")
-                .select(groupEmpSalByDept.col("emp_id"),groupEmpSalByDept.col("emp_name"),deptData.col("dept_name"),groupEmpSalByDept.col("salary"));
+        Dataset<Row> maxSalEmpByDept=maxEmpSalByDept.join(deptData,
+                maxEmpSalByDept.col("dept_id").equalTo(deptData.col("dept_id")),"left_outer")
+                .select(maxEmpSalByDept.col("emp_id"),maxEmpSalByDept.col("emp_name"),deptData.col("dept_name"),maxEmpSalByDept.col("salary"));
 
        return maxSalEmpByDept;
     }
