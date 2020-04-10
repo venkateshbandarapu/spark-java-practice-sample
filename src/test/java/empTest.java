@@ -1,3 +1,5 @@
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.Row;
@@ -20,6 +22,9 @@ public class empTest {
                 (Integer empID)-> "EMP-TEST-"+Integer.toString(empID)
                 , DataTypes.StringType);
 
+        Logger.getLogger("org").setLevel(Level.OFF);
+        Logger.getLogger("akka").setLevel(Level.OFF);
+
 
         Dataset<Row> empData = spark.read()
                 .option("header", "true")
@@ -34,6 +39,8 @@ public class empTest {
         Dataset<Emp> empDataset = empData.as(Encoders.bean(Emp.class));
         Dataset<Dept> deptDataset = deptData.as(Encoders.bean(Dept.class));
         TestSparkCon.getMaxSalEmpByDept(empDataset,deptDataset).show();
+        TestSparkCon.getMaxSalEmpByDept2(empDataset,deptDataset).show();
+        TestSparkCon.getTotalSalByDept(empDataset,deptDataset).show();
        // empDataset.show();
         //deptDataset.show();
     }

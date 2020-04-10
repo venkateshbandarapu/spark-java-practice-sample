@@ -1,12 +1,13 @@
 package sparktest;
+import org.apache.hadoop.hdfs.protocol.SnapshotInfo;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.*;
 import org.apache.spark.sql.expressions.UserDefinedFunction;
 import org.apache.spark.sql.expressions.Window;
 import org.apache.spark.sql.types.*;
-import java.net.URISyntaxException;
 import org.apache.spark.sql.functions.*;
-import scala.Int;
-
 
 public class TestSparkCon {
 
@@ -17,11 +18,12 @@ public class TestSparkCon {
                 .enableHiveSupport()
                 .getOrCreate();
 
+        Logger.getLogger("org").setLevel(Level.OFF);
+        Logger.getLogger("akka").setLevel(Level.OFF);
 
         spark.udf().register("empIdUDF",
                 (Integer empID)-> "EMP-TEST-"+Integer.toString(empID)
                 ,DataTypes.StringType);
-
 
         spark.conf().set("spark.sql.legacy.allowCreatingManagedTableUsingNonemptyLocation",true);
 
@@ -35,6 +37,22 @@ public class TestSparkCon {
                 .write().mode(SaveMode.Overwrite).saveAsTable("test_odm_team.result_max_empsal_by_dept");
 
     }
+
+    /*
+       To get the sum of employees salary for each department
+     */
+    public static Dataset<Row> getTotalSalByDept(Dataset<Emp> empData,Dataset<Dept> deptData){
+
+       Dataset<Row> totalSalByDept=empData.groupBy(empData.col("dept_id")).agg(functions.sum("salary").as("total_salary"));
+
+       Dataset<Row> totalSalByDeptData=totalSalByDept.join(deptData,totalSalByDept.col("dept_id").equalTo(deptData.col("dept_id")),"left_outer");
+
+       return  totalSalByDeptData.select(totalSalByDept.col("dept_id"),deptData.col("dept_name"),totalSalByDept.col("total_salary"));
+
+    }
+    /*
+        To get the highest employee salary for each department
+     */
 
     public static Dataset<Row> getMaxSalEmpByDept(Dataset<Emp> empData,Dataset<Dept> deptData){
 
@@ -53,6 +71,27 @@ public class TestSparkCon {
                 ,deptData.col("dept_name"),maxEmpSalByDept.col("salary"));
 
        return maxSalEmpByDeptData;
+    }
+
+    /*
+     To get the highest employee salary for each department using reduce groups
+  */
+    public static  Dataset<Emp> getMaxSalEmpByDept2(Dataset<Emp> empData,Dataset<Dept> deptData){
+
+
+       Dataset<Emp> maxSalEmpByDeptData= empData.groupByKey((MapFunction<Emp,Integer>) row -> row.dept_id ,Encoders.INT())
+        .reduceGroups((e1,e2)->{
+            Emp e;
+            if (e1.salary > e2.salary){ e=e1;
+            }
+            else { e=e2;
+            }
+            return e;
+
+        }).map(a->a._2,Encoders.bean(Emp.class));
+
+       return maxSalEmpByDeptData;
+
     }
 
     public static StructType getEmpSchema() {
