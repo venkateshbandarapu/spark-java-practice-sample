@@ -36,6 +36,9 @@ public class TestSparkCon {
         getMaxSalEmpByDept(empDataset,deptDataset)
                 .write().mode(SaveMode.Overwrite).saveAsTable("test_odm_team.result_max_empsal_by_dept");
 
+        getTotalSalByDept(empDataset,deptDataset)
+                .write().mode(SaveMode.Overwrite).saveAsTable("test_odm_team.result_total_empsal_by_dept");
+
     }
 
     /*
@@ -63,14 +66,30 @@ public class TestSparkCon {
                 .filter(rankedEmpSalByDept.col("ranking").equalTo("1"))
                 .drop("ranking");
 
-        Dataset<Row> maxSalEmpByDept=maxEmpSalByDept.join(deptData,
-                maxEmpSalByDept.col("dept_id").equalTo(deptData.col("dept_id")),"left_outer")
-                .withColumn("derived_emp_id",functions.callUDF("empIdUDF",maxEmpSalByDept.col("emp_id")));
+        Dataset<Row> maxEmpSalByNullDept=maxEmpSalByDept
+                .filter(maxEmpSalByDept.col("dept_id").isNull());
 
-        Dataset<Row> maxSalEmpByDeptData=maxSalEmpByDept.select(maxSalEmpByDept.col("derived_emp_id"),maxEmpSalByDept.col("emp_id"),maxEmpSalByDept.col("emp_name")
-                ,deptData.col("dept_name"),maxEmpSalByDept.col("salary"));
+        Dataset<Row> maxEmpSalByValidDept=maxEmpSalByDept.except(maxEmpSalByNullDept);
 
-       return maxSalEmpByDeptData;
+        Dataset<Row> maxSalEmpDataByDept=maxEmpSalByValidDept.join(deptData,
+                maxEmpSalByValidDept.col("dept_id").equalTo(deptData.col("dept_id")),"left_outer");
+
+        Dataset<Row> maxSalEmpByValidDeptData=maxSalEmpDataByDept
+                .select(maxSalEmpDataByDept.col("emp_id"),maxSalEmpDataByDept.col("emp_name")
+                ,deptData.col("dept_name"),maxSalEmpDataByDept.col("salary"));
+
+        Dataset<Row> maxEmpSalByNullDeptData=maxEmpSalByNullDept
+                .withColumn("dept_name",functions.lit("Not Available"));
+
+        Dataset<Row> maxEmpSalByDeptData=maxSalEmpByValidDeptData
+                .union(maxEmpSalByNullDeptData.selectExpr(maxSalEmpByValidDeptData.columns()));
+
+        Dataset<Row> derivedEmpData=maxEmpSalByDeptData
+                .withColumn("derived_emp_id",functions.callUDF("empIdUDF",rankedEmpSalByDept.col("emp_id")));
+
+        derivedEmpData.printSchema();
+
+       return derivedEmpData;
     }
 
     /*
