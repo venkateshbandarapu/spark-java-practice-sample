@@ -30,7 +30,10 @@ public class TestSparkCon {
         Dataset<Row> empData=spark.table("test_odm_team.empData");
         Dataset<Row> deptData=spark.table("test_odm_team.deptData");
 
-        Dataset<Emp> empDataset = empData.as(Encoders.bean(Emp.class));
+       // Dataset<Emp> empDataset = empData.as(Encoders.bean(Emp.class));
+        Dataset<Emp> empDataset=empData
+                .na().fill(0,new String[]{"dept_id"}).as(Encoders.bean(Emp.class));
+
         Dataset<Dept> deptDataset = deptData.as(Encoders.bean(Dept.class));
 
         getMaxSalEmpByDept(empDataset,deptDataset)
@@ -67,7 +70,7 @@ public class TestSparkCon {
                 .drop("ranking");
 
         Dataset<Row> maxEmpSalByNullDept=maxEmpSalByDept
-                .filter(maxEmpSalByDept.col("dept_id").isNull());
+                .filter(maxEmpSalByDept.col("dept_id").equalTo("0"));
 
         Dataset<Row> maxEmpSalByValidDept=maxEmpSalByDept.except(maxEmpSalByNullDept);
 
@@ -96,7 +99,6 @@ public class TestSparkCon {
      To get the highest employee salary for each department using reduce groups
   */
     public static  Dataset<Emp> getMaxSalEmpByDept2(Dataset<Emp> empData,Dataset<Dept> deptData){
-
 
        Dataset<Emp> maxSalEmpByDeptData= empData.groupByKey((MapFunction<Emp,Integer>) row -> row.dept_id ,Encoders.INT())
         .reduceGroups((e1,e2)->{

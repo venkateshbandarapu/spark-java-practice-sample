@@ -8,3 +8,5 @@ emp_id,emp_name,dept_id,salary
 7,Steve,12,10000.00
 8,Stefen,10,15000.00
 9,Roshan,11,9000.00
+10,Suhan,,10000.00
+11,Sachin,,12000.00

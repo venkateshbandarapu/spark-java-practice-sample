@@ -36,8 +36,13 @@ public class empTest {
                 .schema(TestSparkCon.getDeptSchema())
                 .csv("src/main/resources/dept.csv");
 
-        Dataset<Emp> empDataset = empData.as(Encoders.bean(Emp.class));
+        Dataset<Emp> empDataset=empData
+                .na().fill(0,new String[]{"dept_id"}).as(Encoders.bean(Emp.class));
+
         Dataset<Dept> deptDataset = deptData.as(Encoders.bean(Dept.class));
+
+      //  Dataset<Emp> empDataset = empData.as(Encoders.bean(Emp.class));
+       // Dataset<Dept> deptDataset = deptData.as(Encoders.bean(Dept.class));
         TestSparkCon.getMaxSalEmpByDept(empDataset,deptDataset).show();
         TestSparkCon.getMaxSalEmpByDept2(empDataset,deptDataset).show();
         TestSparkCon.getTotalSalByDept(empDataset,deptDataset).show();
