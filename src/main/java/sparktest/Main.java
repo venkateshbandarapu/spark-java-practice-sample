@@ -9,7 +9,7 @@ import org.apache.spark.sql.expressions.Window;
 import org.apache.spark.sql.types.*;
 import org.apache.spark.sql.functions.*;
 
-public class TestSparkCon {
+public class Main {
 
     public static void main(String h[]) {
 
@@ -30,7 +30,6 @@ public class TestSparkCon {
         Dataset<Row> empData=spark.table("test_odm_team.empData");
         Dataset<Row> deptData=spark.table("test_odm_team.deptData");
 
-       // Dataset<Emp> empDataset = empData.as(Encoders.bean(Emp.class));
         Dataset<Emp> empDataset=empData
                 .na().fill(0,new String[]{"dept_id"}).as(Encoders.bean(Emp.class));
 
@@ -77,8 +76,10 @@ public class TestSparkCon {
         Dataset<Row> maxSalEmpDataByDept=maxEmpSalByValidDept.join(deptData,
                 maxEmpSalByValidDept.col("dept_id").equalTo(deptData.col("dept_id")),"left_outer");
 
+        maxSalEmpDataByDept.printSchema();
+
         Dataset<Row> maxSalEmpByValidDeptData=maxSalEmpDataByDept
-                .select(maxSalEmpDataByDept.col("emp_id"),maxSalEmpDataByDept.col("emp_name")
+                .select(maxSalEmpDataByDept.col("emp_id"),maxSalEmpDataByDept.col("emp_name"),maxEmpSalByValidDept.col("dept_id")
                 ,deptData.col("dept_name"),maxSalEmpDataByDept.col("salary"));
 
         Dataset<Row> maxEmpSalByNullDeptData=maxEmpSalByNullDept
@@ -89,8 +90,6 @@ public class TestSparkCon {
 
         Dataset<Row> derivedEmpData=maxEmpSalByDeptData
                 .withColumn("derived_emp_id",functions.callUDF("empIdUDF",rankedEmpSalByDept.col("emp_id")));
-
-        derivedEmpData.printSchema();
 
        return derivedEmpData;
     }
