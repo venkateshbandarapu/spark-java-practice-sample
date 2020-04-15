@@ -9,7 +9,7 @@ import org.apache.spark.sql.expressions.Window;
 import org.apache.spark.sql.types.*;
 import org.apache.spark.sql.functions.*;
 
-public class TestSparkCon {
+public class Main {
 
     public static void main(String h[]) {
 
@@ -30,11 +30,16 @@ public class TestSparkCon {
         Dataset<Row> empData=spark.table("test_odm_team.empData");
         Dataset<Row> deptData=spark.table("test_odm_team.deptData");
 
-        Dataset<Emp> empDataset = empData.as(Encoders.bean(Emp.class));
+        Dataset<Emp> empDataset=empData
+                .na().fill(0,new String[]{"dept_id"}).as(Encoders.bean(Emp.class));
+
         Dataset<Dept> deptDataset = deptData.as(Encoders.bean(Dept.class));
 
         getMaxSalEmpByDept(empDataset,deptDataset)
                 .write().mode(SaveMode.Overwrite).saveAsTable("test_odm_team.result_max_empsal_by_dept");
+
+        getTotalSalByDept(empDataset,deptDataset)
+                .write().mode(SaveMode.Overwrite).saveAsTable("test_odm_team.result_total_empsal_by_dept");
 
     }
 
@@ -63,21 +68,36 @@ public class TestSparkCon {
                 .filter(rankedEmpSalByDept.col("ranking").equalTo("1"))
                 .drop("ranking");
 
-        Dataset<Row> maxSalEmpByDept=maxEmpSalByDept.join(deptData,
-                maxEmpSalByDept.col("dept_id").equalTo(deptData.col("dept_id")),"left_outer")
-                .withColumn("derived_emp_id",functions.callUDF("empIdUDF",maxEmpSalByDept.col("emp_id")));
+        Dataset<Row> maxEmpSalByNullDept=maxEmpSalByDept
+                .filter(maxEmpSalByDept.col("dept_id").equalTo("0"));
 
-        Dataset<Row> maxSalEmpByDeptData=maxSalEmpByDept.select(maxSalEmpByDept.col("derived_emp_id"),maxEmpSalByDept.col("emp_id"),maxEmpSalByDept.col("emp_name")
-                ,deptData.col("dept_name"),maxEmpSalByDept.col("salary"));
+        Dataset<Row> maxEmpSalByValidDept=maxEmpSalByDept.except(maxEmpSalByNullDept);
 
-       return maxSalEmpByDeptData;
+        Dataset<Row> maxSalEmpDataByDept=maxEmpSalByValidDept.join(deptData,
+                maxEmpSalByValidDept.col("dept_id").equalTo(deptData.col("dept_id")),"left_outer");
+
+        maxSalEmpDataByDept.printSchema();
+
+        Dataset<Row> maxSalEmpByValidDeptData=maxSalEmpDataByDept
+                .select(maxSalEmpDataByDept.col("emp_id"),maxSalEmpDataByDept.col("emp_name"),maxEmpSalByValidDept.col("dept_id")
+                ,deptData.col("dept_name"),maxSalEmpDataByDept.col("salary"));
+
+        Dataset<Row> maxEmpSalByNullDeptData=maxEmpSalByNullDept
+                .withColumn("dept_name",functions.lit("Not Available"));
+
+        Dataset<Row> maxEmpSalByDeptData=maxSalEmpByValidDeptData
+                .union(maxEmpSalByNullDeptData.selectExpr(maxSalEmpByValidDeptData.columns()));
+
+        Dataset<Row> derivedEmpData=maxEmpSalByDeptData
+                .withColumn("derived_emp_id",functions.callUDF("empIdUDF",rankedEmpSalByDept.col("emp_id")));
+
+       return derivedEmpData;
     }
 
     /*
      To get the highest employee salary for each department using reduce groups
   */
     public static  Dataset<Emp> getMaxSalEmpByDept2(Dataset<Emp> empData,Dataset<Dept> deptData){
-
 
        Dataset<Emp> maxSalEmpByDeptData= empData.groupByKey((MapFunction<Emp,Integer>) row -> row.dept_id ,Encoders.INT())
         .reduceGroups((e1,e2)->{
