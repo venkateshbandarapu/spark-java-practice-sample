@@ -76,8 +76,6 @@ public class Main {
         Dataset<Row> maxSalEmpDataByDept=maxEmpSalByValidDept.join(deptData,
                 maxEmpSalByValidDept.col("dept_id").equalTo(deptData.col("dept_id")),"left_outer");
 
-        maxSalEmpDataByDept.printSchema();
-
         Dataset<Row> maxSalEmpByValidDeptData=maxSalEmpDataByDept
                 .select(maxSalEmpDataByDept.col("emp_id"),maxSalEmpDataByDept.col("emp_name"),maxEmpSalByValidDept.col("dept_id")
                 ,deptData.col("dept_name"),maxSalEmpDataByDept.col("salary"));
