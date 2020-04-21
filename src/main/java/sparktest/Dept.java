@@ -1,6 +1,14 @@
 package sparktest;
 
 public class Dept {
+
+
+    int dept_id;
+    String dept_name;
+
+/*    public String getDept_name() {
+        return dept_name;
+    }
     public int getDept_id() {
         return dept_id;
     }
@@ -9,15 +17,9 @@ public class Dept {
         this.dept_id = dept_id;
     }
 
-    int dept_id;
-
-    public String getDept_name() {
-        return dept_name;
-    }
-
     public void setDept_name(String dept_name) {
         this.dept_name = dept_name;
-    }
+    }*/
 
-    String dept_name;
+
 }

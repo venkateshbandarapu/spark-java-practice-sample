@@ -31,8 +31,6 @@ public class empTest {
                 .enableHiveSupport()
                 .getOrCreate();
 
-        spark.sqlContext().sql("show databases").show();
-
         Logger.getLogger("org").setLevel(Level.OFF);
         Logger.getLogger("akka").setLevel(Level.OFF);
 
@@ -54,6 +52,7 @@ public class empTest {
                 .na().fill(0,new String[]{"dept_id"}).as(Encoders.bean(Emp.class));
 
         deptDataset = deptData.as(Encoders.bean(Dept.class));
+
     }
 
 
@@ -75,6 +74,7 @@ public class empTest {
        Assert.assertTrue(compareMaps(actualMap,expectedMap));
 
     }
+
     @Test
     public void testTotalSalByDept(){
 
@@ -91,6 +91,11 @@ public class empTest {
         actualResult.forEach( a->actualMap.put(a.getInt(0),a.getDouble(1)));
 
         Assert.assertTrue(compareMaps(actualMap,expectedMap));
+    }
+    @Test
+    public  void  testCollectedSalByDept(){
+       Dataset<Row> result= Main.collectEmpSalariesByDept(empDataset,deptDataset);
+       result.printSchema();
     }
 
     public boolean compareMaps(Map<Integer,Double> actualResult,Map<Integer,Double> expectedResult){

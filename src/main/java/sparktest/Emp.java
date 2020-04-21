@@ -7,7 +7,7 @@ public class Emp {
     String emp_name;
     Double salary;
 
-    public int getEmp_id() {
+ /*   public int getEmp_id() {
         return emp_id;
     }
 
@@ -36,7 +36,7 @@ public class Emp {
 
     public void setSalary(Double salary) {
         this.salary = salary;
-    }
+    }*/
 
 
 }

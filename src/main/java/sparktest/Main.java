@@ -9,8 +9,10 @@ import org.apache.spark.sql.expressions.Window;
 import org.apache.spark.sql.types.*;
 import org.apache.spark.sql.functions.*;
 
+import lombok.Generated;
 public class Main {
 
+    @Generated
     public static void main(String h[]) {
 
         SparkSession spark = SparkSession
@@ -92,9 +94,11 @@ public class Main {
        return derivedEmpData;
     }
 
+
     /*
      To get the highest employee salary for each department using reduce groups
   */
+    @Generated
     public static  Dataset<Emp> getMaxSalEmpByDept2(Dataset<Emp> empData,Dataset<Dept> deptData){
 
        Dataset<Emp> maxSalEmpByDeptData= empData.groupByKey((MapFunction<Emp,Integer>) row -> row.dept_id ,Encoders.INT())
@@ -109,6 +113,16 @@ public class Main {
         }).map(a->a._2,Encoders.bean(Emp.class));
 
        return maxSalEmpByDeptData;
+
+    }
+    public static Dataset<Row> collectEmpSalariesByDept(Dataset<Emp> empData,Dataset<Dept> deptData){
+        Dataset<Row> collectedEmpSal=empData
+                .groupBy(empData.col("dept_id")).agg(functions.collect_list("salary").as("collect_salary"));
+
+        Dataset<Row> collectedEmpSalWithDept=collectedEmpSal
+                .join(deptData,empData.col("dept_id").equalTo(deptData.col("dept_id")),"left_outer")
+                .select(collectedEmpSal.col("dept_id"),deptData.col("dept_name"),collectedEmpSal.col("collect_salary"));
+      return collectedEmpSalWithDept;
 
     }
 
