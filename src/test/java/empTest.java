@@ -71,7 +71,6 @@ public class empTest {
        List<Row> actualResult=Main.getMaxSalEmpByDept(empDataset,deptDataset)
                .select("dept_id","salary").collectAsList();
        actualResult.forEach( a->actualMap.put(a.getInt(0),a.getDouble(1)));
-       System.out.println("actual:"+actualMap);
 
        Assert.assertTrue(compareMaps(actualMap,expectedMap));
 
@@ -90,7 +89,6 @@ public class empTest {
         List<Row> actualResult=Main.getTotalSalByDept(empDataset,deptDataset)
                 .select("dept_id","total_salary").collectAsList();
         actualResult.forEach( a->actualMap.put(a.getInt(0),a.getDouble(1)));
-        System.out.println("actual:"+actualMap);
 
         Assert.assertTrue(compareMaps(actualMap,expectedMap));
     }
