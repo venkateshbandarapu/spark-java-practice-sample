@@ -3,6 +3,7 @@ import org.apache.hadoop.hdfs.protocol.SnapshotInfo;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.spark.api.java.function.MapFunction;
+import org.apache.spark.api.java.function.ReduceFunction;
 import org.apache.spark.sql.*;
 import org.apache.spark.sql.expressions.UserDefinedFunction;
 import org.apache.spark.sql.expressions.Window;
@@ -10,6 +11,8 @@ import org.apache.spark.sql.types.*;
 import org.apache.spark.sql.functions.*;
 
 import lombok.Generated;
+import scala.Tuple2;
+
 public class Main {
 
     @Generated
@@ -102,7 +105,7 @@ public class Main {
     public static  Dataset<Emp> getMaxSalEmpByDept2(Dataset<Emp> empData,Dataset<Dept> deptData){
 
        Dataset<Emp> maxSalEmpByDeptData= empData.groupByKey((MapFunction<Emp,Integer>) row -> row.dept_id ,Encoders.INT())
-        .reduceGroups((e1,e2)->{
+        .reduceGroups((ReduceFunction<Emp>) (e1, e2)->{
             Emp e;
             if (e1.salary > e2.salary){ e=e1;
             }
@@ -110,7 +113,7 @@ public class Main {
             }
             return e;
 
-        }).map(a->a._2,Encoders.bean(Emp.class));
+        }).map((MapFunction<Tuple2<Integer, Emp>, Emp>) a->a._2,Encoders.bean(Emp.class));
 
        return maxSalEmpByDeptData;
 

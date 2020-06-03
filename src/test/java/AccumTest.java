@@ -45,30 +45,34 @@ SparkSession spark= SparkSession
     }
 
     public static void registerUDF(SparkSession session){
-        session.udf().register("empJoinDateUdf", (Seq<Timestamp> join_dates)->{
-                    Timestamp updated_TS=null;
+        session.udf()
+                .register("empJoinDateUdf", (Seq<Timestamp> join_dates)->{
                     ArrayList<Timestamp> validJoinDates=new ArrayList<>();
                     for( int i=0;i<join_dates.length();i++){
                         Timestamp joinDT=join_dates.apply(i);
-                        if(updated_TS==null){
-                            updated_TS=joinDT;
-                            if(join_dates.length()==1){
-                                validJoinDates.add(updated_TS);
+                           if(join_dates.length()==1){
+                                validJoinDates.add(joinDT);
                             }
-                        }
                         else{
-                            Timestamp recentTS=updated_TS;
+                            Timestamp recentTS=null;
+                            if(i==0){
+                                recentTS=joinDT;
+                            }
+                            else{
+                                recentTS=validJoinDates.get(validJoinDates.size()-1);
+                            }
                             Calendar cal = Calendar.getInstance();
                             cal.setTime(recentTS);
                             cal.add(Calendar.DAY_OF_WEEK, 30);
                             Timestamp time_30=new Timestamp(cal.getTime().getTime());
 
-                            if(recentTS.before(joinDT) && (time_30.after(joinDT) || joinDT.equals(time_30))){
-                                updated_TS=time_30;
-                                validJoinDates.add(recentTS);
+                            if(recentTS.before(joinDT) && (time_30.after(joinDT))){
+                                System.out.println("inside if");
+                                 validJoinDates.add(recentTS);
                             }
                             else
                             {
+                                System.out.println("inside else");
                                 validJoinDates.add(joinDT);
                             }
                         }
