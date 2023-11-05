@@ -20,6 +20,7 @@ public class Main {
 
         SparkSession spark = SparkSession
                 .builder()
+                .master("local[*]")
                 .enableHiveSupport()
                 .getOrCreate();
 
